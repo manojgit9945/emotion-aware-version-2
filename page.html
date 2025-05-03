@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Enhanced Emotion Chat</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      color: #333;
+    }
+    .status-bar {
+      padding: 0.75em 1em;
+      background: #1f2937;
+      color: #fff;
+      font-size: 0.95em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .status-dot {
+      height: 8px;
+      width: 8px;
+      border-radius: 50%;
+      background-color: gray;
+    }
+    .status-dot.online {
+      background-color: #10b981;
+    }
+    .status-dot.offline {
+      background-color: #ef4444;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1em;
+      overflow: hidden;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 1em;
+      padding-right: 0.5em;
+    }
+    .message {
+      max-width: 80%;
+      margin-bottom: 1em;
+      padding: 0.75em 1em;
+      border-radius: 12px;
+      line-height: 1.4;
+      position: relative;
+      animation: fadeIn 0.3s ease-in-out;
+      word-wrap: break-word;
+    }
+    .message.user {
+      background: #dcfce7;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .message.bot {
+      background: #dbeafe;
+      align-self: flex-start;
+    }
+    .timestamp {
+      font-size: 0.75em;
+      color: #666;
+      margin-top: 0.3em;
+      text-align: right;
+    }
+    .message-emotion {
+      font-size: 0.75em;
+      font-style: italic;
+      margin-top: 0.3em;
+    }
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+    }
+    .input-box {
+      display: flex;
+      gap: 0.5em;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.75em;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      padding: 0.75em 1em;
+      border: none;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .char-count {
+      font-size: 0.8em;
+      color: #666;
+      text-align: right;
+    }
+    .error {
+      color: #ef4444;
+      font-size: 0.85em;
+    }
+    .charts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      background: #fff;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 1em;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5em;
+    }
+    .chart-title {
+      font-weight: 600;
+      font-size: 1em;
+    }
+    .chart-controls {
+      display: flex;
+      gap: 0.5em;
+    }
+    .chart-toggle {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 0.3em 0.6em;
+      font-size: 0.8em;
+      border-radius: 4px;
+    }
+    .chart-container {
+      position: relative;
+      height: 180px;
+      margin-bottom: 1em;
+    }
+    .emotion-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1em;
+      margin-top: 0.5em;
+    }
+    .emotion-stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      font-size: 0.9em;
+    }
+    .emotion-emoji {
+      font-size: 1.2em;
+    }
+    .emotion-name {
+      width: 60px;
+    }
+    .emotion-bar-container {
+      flex: 1;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .emotion-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    [data-emotion="happy"] .emotion-bar {
+      background-color: #22c55e;
+    }
+    [data-emotion="sad"] .emotion-bar {
+      background-color: #3b82f6;
+    }
+    [data-emotion="angry"] .emotion-bar {
+      background-color: #ef4444;
+    }
+    [data-emotion="fear"] .emotion-bar {
+      background-color: #8b5cf6;
+    }
+    [data-emotion="surprise"] .emotion-bar {
+      background-color: #f59e0b;
+    }
+    [data-emotion="neutral"] .emotion-bar {
+      background-color: #9ca3af;
+    }
+    .emotion-count {
+      width: 24px;
+      text-align: right;
+      font-size: 0.85em;
+      color: #666;
+    }
+    .typing-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.3em;
+      margin-bottom: 1em;
+      font-size: 0.9em;
+      color: #666;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: #666;
+      border-radius: 50%;
+      animation: bounce 1.5s infinite;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    .clear-btn {
+      background: #f87171;
+    }
+    .clear-btn:hover {
+      background: #ef4444;
+    }
+    .api-response {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75em;
+      margin-top: 1em;
+      font-family: monospace;
+      font-size: 0.9em;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .api-response-title {
+      font-weight: 600;
+      margin-bottom: 0.3em;
+      color: #475569;
+    }
+    .debug-panel {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 1em;
+      margin-top: 1em;
+      font-size: 0.9em;
+    }
+    .debug-toggle {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 0.3em 0.6em;
+      font-size: 0.8em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 0.5em;
+      display: inline-block;
+    }
+    .debug-content {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
+    }
+
+    @media (max-width: 768px) {
+      .message { max-width: 95%; }
+      .charts-container { padding: 0.75em; }
+      .emotion-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    .loading-spinner {
+  text-align: center;
+  font-size: 1.2em;
+  color: #3b82f6;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+  </style>
+  <!-- Add this CSS to your <style> section in the head -->
+<style>
+  /* New sidebar styles - add these to your existing CSS */
+  .main-container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .recommendations-container {
+    width: 300px;
+    background: #fff;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .recommendations-header {
+    padding: 1em;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .recommendations-title {
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .recommendations-toggle {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.3em;
+    font-size: 1.2em;
+    display: none;
+  }
+  
+  .recommendations-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1em;
+  }
+  
+  .recommendation-item {
+    margin-bottom: 1em;
+    padding: 1em;
+    border-radius: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+  }
+  
+  .recommendation-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .recommendation-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  
+  .recommendation-emoji {
+    font-size: 1.2em;
+    min-width: 24px;
+  }
+  
+  .recommendation-title {
+    font-weight: 500;
+    color: #3b82f6;
+  }
+  
+  .recommendation-meta {
+    font-size: 0.8em;
+    color: #6b7280;
+    margin-bottom: 0.5em;
+  }
+  
+  .recommendation-snippet {
+    font-size: 0.9em;
+    color: #4b5563;
+  }
+  
+  .mobile-recommendations-toggle {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    font-size: 1.5em;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .loading-container {
+    padding: 1em;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  .recommendation-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+  }
+  
+  .recommendation-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  .no-recommendations {
+    text-align: center;
+    padding: 2em;
+    color: #6b7280;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Responsive styles for the recommendations sidebar */
+  @media (max-width: 1024px) {
+    .recommendations-container {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 300px;
+      z-index: 1000;
+      transform: translateX(100%); 
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .recommendations-container.visible {
+      transform: translateX(0);
+    }
+    
+    .mobile-recommendations-toggle {
+      display: flex;
+    }
+    
+    .recommendations-toggle {
+      display: block;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .recommendations-container {
+      width: 85%;
+    }
+  }
+</style>
+</head>
+<!-- Modify your HTML body to wrap everything in the main-container -->
+<body>
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div id="chat-status-dot" class="status-dot"></div>
+      <div id="chat-status">Chat API: Checking...</div>
+    </div>
+    <div class="status-indicator">
+      <div id="emotion-status-dot" class="status-dot"></div>
+      <div id="emotion-status">Emotion API: Checking...</div>
+    </div>
+  </div>
+  
+  <div class="main-container">
+    <div class="chat-container">
+      <div class="charts-container">
+        <div class="chart-header">
+          <div class="chart-title">Emotion Analysis</div>
+          <div class="chart-controls">
+            <button id="toggleChartBtn" class="chart-toggle">Collapse</button>
+            <button id="clearDataBtn" class="chart-toggle clear-btn">Clear All Data</button>
+            <button id="toggleDebugBtn" class="chart-toggle">Debug Mode</button>
+          </div>
+        </div>
+        <div id="chartContainer" class="chart-container">
+          <canvas id="emotionChart"></canvas>
+        </div>
+        <div id="emotionStats" class="emotion-stats">
+          <!-- Emotion stats will be dynamically generated -->
+        </div>
+        
+        <div id="debugPanel" class="debug-panel" style="display: none;">
+          <div class="api-response-title">Latest API Responses:</div>
+          <div class="api-response" id="chatApiResponse">No chat data yet</div>
+          <div class="api-response" id="emotionApiResponse">No emotion data yet</div>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="typing-indicator" id="typingIndicator">
+        <span></span>
+        <span></span>
+        <span></span>
+        Bot is typing...
+      </div>
+      <div class="input-section">
+        <div class="input-box">
+          <input type="text" id="userInput" maxlength="256" placeholder="Type your message..." />
+          <button id="sendBtn">Send</button>
+        </div>
+        <div class="char-count"><span id="charCount">0</span>/256</div>
+        <div class="error" id="errorMsg"></div>
+      </div>
+    </div>
+    
+    <!-- Add the recommendations sidebar -->
+    <div class="recommendations-container" id="recommendationsContainer">
+      <div class="recommendations-header">
+        <div class="recommendations-title">Recommendations</div>
+        <button class="recommendations-toggle" id="closeRecommendationsBtn">×</button>
+      </div>
+      <div class="recommendations-content" id="recommendationsContent">
+        <div class="no-recommendations">
+          Start chatting to see personalized recommendations
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add the mobile toggle button -->
+  <button class="mobile-recommendations-toggle" id="mobileRecommendationsToggle">
+    💡
+  </button>
+</body>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Configuration
+    const chatAPI = 'http://localhost:5003/chat';     // Changed from 192.168.1.5 to localhost
+const emotionAPI = 'http://localhost:5002/detect-emotion';  // Changed from 192.168.1.5 to localhost
+const maxStoredMessages = 100;
+const maxDisplayedEmotions = 20;
+let debugMode = localStorage.getItem('debugMode') === 'true';
+    
+    // DOM Elements
+    const input = document.getElementById('userInput');
+    const messagesEl = document.getElementById('messages');
+    const errorMsgEl = document.getElementById('errorMsg');
+    const charCount = document.getElementById('charCount');
+    const emotionChartCtx = document.getElementById('emotionChart').getContext('2d');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const sendBtn = document.getElementById('sendBtn');
+    const toggleChartBtn = document.getElementById('toggleChartBtn');
+    const chartContainer = document.getElementById('chartContainer');
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+    const debugPanel = document.getElementById('debugPanel');
+    const chatApiResponse = document.getElementById('chatApiResponse');
+    const emotionApiResponse = document.getElementById('emotionApiResponse');
+    const emotionStats = document.getElementById('emotionStats');
+    
+    // State management
+    let emotionsData = JSON.parse(localStorage.getItem('emotionsData')) || [];
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    let chartVisible = localStorage.getItem('chartVisible') !== 'false';
+    let supportedEmotions = [];
+    
+    // Default emotion mapping - will be updated from API responses
+    let emotionColors = {
+      happy: '#22c55e',
+      sad: '#3b82f6',
+      angry: '#ef4444',
+      fear: '#8b5cf6',
+      surprise: '#f59e0b',
+      neutral: '#9ca3af'
+    };
+    
+    let emotionEmojis = {
+      happy: '😊',
+      sad: '😢',
+      angry: '😠',
+      fear: '😨',
+      surprise: '😲',
+      neutral: '😐'
+    };
+    
+    // Initialize chart with placeholder data
+    const chart = new Chart(emotionChartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Emotion Trend',
+          data: [],
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: '#3b82f6',
+          borderWidth: 2,
+          pointBackgroundColor: [],
+          pointBorderColor: '#fff',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.2,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'nearest',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(31, 41, 55, 0.8)',
+            padding: 10,
+            titleFont: {
+              size: 14
+            },
+            bodyFont: {
+              size: 13
+            },
+            callbacks: {
+              label: function(context) {
+                const index = context.dataIndex;
+                const emotion = emotionsData[index]?.emotion || 'unknown';
+                return `${emotion} ${emotionEmojis[emotion] || ''}`;
+              },
+              title: function(context) {
+                return context[0].label;
+              }
+            }
+          }
+        },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            grid: {
+              color: 'rgba(156, 163, 175, 0.1)'
+            },
+            ticks: {
+              font: {
+                size: 12
+              },
+              callback: function(value, index) {
+                // This will be updated once we know the emotions from the API
+                return supportedEmotions[value] || '';
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45,
+              font: {
+                size: 11
+              },
+              autoSkip: true,
+              maxTicksLimit: 10
+            }
+          }
+        }
+      }
+    });
+    
+    // Event listeners
+    input.addEventListener('input', () => {
+      charCount.textContent = input.value.length;
+    });
+    
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim() && !sendBtn.disabled) {
+          sendMessage();
+        }
+      }
+    });
+    
+    sendBtn.addEventListener('click', sendMessage);
+    
+    toggleChartBtn.addEventListener('click', () => {
+      chartVisible = !chartVisible;
+      chartContainer.style.display = chartVisible ? 'block' : 'none';
+      toggleChartBtn.textContent = chartVisible ? 'Collapse' : 'Expand';
+      localStorage.setItem('chartVisible', chartVisible);
+    });
+    
+    toggleDebugBtn.addEventListener('click', () => {
+      debugMode = !debugMode;
+      debugPanel.style.display = debugMode ? 'block' : 'none';
+      localStorage.setItem('debugMode', debugMode);
+    });
+    
+    clearDataBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all chat history and emotion data?')) {
+        chatHistory = [];
+        emotionsData = [];
+        saveToLocalStorage();
+        renderMessages();
+        updateEmotionChart();
+      }
+    });
+    
+    // Functions
+    function renderMessages() {
+      messagesEl.innerHTML = '';
+      chatHistory.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `message ${msg.sender}`;
+        
+        let content = `<div>${msg.text}</div>`;
+        content += `<div class="timestamp">${msg.time}</div>`;
+        
+        if (msg.sender === 'user' && msg.emotion) {
+          const emoji = emotionEmojis[msg.emotion] || '';
+          content += `<div class="message-emotion">${emoji} ${msg.emotion}</div>`;
+        }
+        
+        div.innerHTML = content;
+        messagesEl.appendChild(div);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    
+    function saveToLocalStorage() {
+      // Limit chat history size to prevent localStorage overflow
+      if (chatHistory.length > maxStoredMessages) {
+        chatHistory = chatHistory.slice(-maxStoredMessages);
+      }
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+      localStorage.setItem('emotionsData', JSON.stringify(emotionsData));
+    }
+    
+    async function checkHealth() {
+      try {
+        const chatHealth = await fetch(chatAPI.replace('/chat', '/health')).then(res => res.json());
+        document.getElementById('chat-status').textContent = `Chat API: ${chatHealth.status}`;
+        document.getElementById('chat-status-dot').className = 'status-dot ' + (chatHealth.status === 'OK' ? 'online' : 'offline');
+        
+        // Check if the API returns supported emotions
+        if (chatHealth.supported_emotions) {
+          updateSupportedEmotions(chatHealth.supported_emotions);
+        }
+      } catch (err) {
+        document.getElementById('chat-status').textContent = `Chat API: Offline`;
+        document.getElementById('chat-status-dot').className = 'status-dot offline';
+        console.error('Chat API health check failed:', err);
+      }
+      
+      try {
+        const emotionHealth = await fetch(emotionAPI.replace('/detect-emotion', '/health')).then(res => res.json());
+        document.getElementById('emotion-status').textContent = `Emotion API: ${emotionHealth.status}`;
+        document.getElementById('emotion-status-dot').className = 'status-dot ' + (emotionHealth.status === 'OK' ? 'online' : 'offline');
+        
+        // Check if the API returns supported emotions
+        if (emotionHealth.supported_emotions) {
+          updateSupportedEmotions(emotionHealth.supported_emotions);
+        }
+      } catch (err) {
+        document.getElementById('emotion-status').textContent = `Emotion API: Offline`;
+        document.getElementById('emotion-status-dot').className = 'status-dot offline';
+        console.error('Emotion API health check failed:', err);
+      }
+    }
+    
+    function updateSupportedEmotions(emotions) {
+      if (!emotions || !Array.isArray(emotions) || emotions.length === 0) return;
+      
+      // Update supported emotions
+      supportedEmotions = emotions;
+      
+      // Rebuild emotion maps
+      const newEmotionValues = {};
+      supportedEmotions.forEach((emotion, index) => {
+        newEmotionValues[emotion] = index;
+      });
+      
+      // Only update chart if we have data
+      if (chart && chart.options && chart.options.scales && chart.options.scales.y) {
+        chart.options.scales.y.max = supportedEmotions.length - 1;
+        chart.options.scales.y.ticks.stepSize = 1;
+      }
+      
+      // Update emotion stats UI
+      updateEmotionStatsUI();
+    }
+    
+    function updateEmotionStatsUI() {
+      // Clear existing stats
+      emotionStats.innerHTML = '';
+      
+      // Add a stat item for each supported emotion
+      supportedEmotions.forEach((emotion) => {
+        const color = emotionColors[emotion] || '#9ca3af';
+        const emoji = emotionEmojis[emotion] || '😐';
+        
+        const statItem = document.createElement('div');
+        statItem.className = 'emotion-stat-item';
+        statItem.dataset.emotion = emotion;
+        
+        statItem.innerHTML = `
+          <span class="emotion-emoji">${emoji}</span>
+          <span class="emotion-name">${emotion}</span>
+          <div class="emotion-bar-container">
+            <div class="emotion-bar" style="width: 0%; background-color: ${color}"></div>
+          </div>
+          <span class="emotion-count">0</span>
+        `;
+        
+        emotionStats.appendChild(statItem);
+      });
+    }
+    
+    async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const msgId = Date.now().toString();
+
+  // 1️⃣ Show user message immediately
+  addMessage('user', text, time, msgId);
+
+  // 2️⃣ Clear input and disable sending
+  input.value = '';
+  charCount.textContent = '0';
+  errorMsgEl.textContent = '';
+  sendBtn.disabled = true;
+
+  // 3️⃣ Show typing indicator
+  typingIndicator.style.display = 'flex';
+
+  try {
+    // 4️⃣ Run both API calls in parallel for better performance
+    const [chatRes, emotionRes] = await Promise.all([
+      fetch(chatAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      }).then(r => r.json()),
+
+      fetch(emotionAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      }).then(r => r.json())
+    ]);
+
+    // 5️⃣ Update debug panel with raw API responses
+    if (debugMode) {
+      chatApiResponse.textContent = JSON.stringify(chatRes, null, 2);
+      emotionApiResponse.textContent = JSON.stringify(emotionRes, null, 2);
+    }
+
+    // 6️⃣ Show bot response
+    const botMsgId = Date.now().toString();
+    addMessage('bot', chatRes.response, time, botMsgId);
+
+    // 7️⃣ Process emotion and update UI
+    const emotion = emotionRes.primary_emotion || 'neutral';
+
+    // If we got new emotions from the API, update our list
+    if (emotionRes.all_emotions && Array.isArray(emotionRes.all_emotions)) {
+      const newEmotions = Object.keys(emotionRes.all_emotions);
+      if (newEmotions.length > 0 && !areArraysEqual(supportedEmotions, newEmotions)) {
+        updateSupportedEmotions(newEmotions);
+      }
+    }
+
+    // Update user message with detected emotion
+    updateMessageEmotion(msgId, emotion);
+
+    // Update emotion chart with the detected emotion
+    updateEmotionChart(emotion, time);
+
+    // 8️⃣ Save everything to localStorage
+    saveToLocalStorage();
+
+    
+    
+
+    // 🔟 Fetch recommendations - now with multiple content types
+// 🔟 Fetch recommendations - now with multiple content types
+fetch("http://localhost:5004/recommend", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ 
+    text: text, 
+    emotion: emotion,
+    num_recommendations: 5
+  })
+})
+.then(res => res.json())
+.then(data => {
+  if (data.recommendations && data.recommendations.length > 0) {
+    renderRecommendations(data.recommendations);
+  } else {
+    recommendationsContent.innerHTML = `
+      <div class="no-recommendations">
+        No recommendations available
+      </div>
+    `;
+  }
+})
+.catch(err => {
+  console.warn("Failed to fetch recommendations:", err);
+  
+  recommendationsContent.innerHTML = `
+    <div class="no-recommendations">
+      Unable to load recommendations. Please try again later.
+    </div>
+  `;
+  
+  // Add error message if recommendations fail
+  const errorDiv = document.createElement("div");
+  errorDiv.className = "message bot error-message";
+  errorDiv.innerHTML = `
+    <div style="padding:0.8em;border-radius:6px;background:#fee2e2;border:1px solid #fecaca;color:#b91c1c;font-size:0.9em;">
+      Unable to load recommendations. Please try again later.
+    </div>
+  `;
+  messagesEl.appendChild(errorDiv);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+});
+  } catch (err) {
+    errorMsgEl.textContent = 'Error connecting to services. Please try again.';
+    console.error('sendMessage error:', err);
+  } finally {
+    // 🔄 Cleanup
+    sendBtn.disabled = false;
+    typingIndicator.style.display = 'none';
+  }
+}
+    function addMessage(sender, text, time, id) {
+      const msg = { sender, text, time, id };
+      chatHistory.push(msg);
+      renderMessages();
+    }
+    
+    function updateMessageEmotion(id, emotion) {
+      const msgIndex = chatHistory.findIndex(msg => msg.id === id);
+      if (msgIndex !== -1) {
+        chatHistory[msgIndex].emotion = emotion;
+        renderMessages();
+      }
+    }
+    
+    function updateEmotionChart(emotion = null, time = null) {
+      if (emotion && time) {
+        // Add new data point
+        emotionsData.push({ time, emotion });
+        
+        // Keep chart data manageable
+        if (emotionsData.length > maxDisplayedEmotions) {
+          emotionsData = emotionsData.slice(-maxDisplayedEmotions);
+        }
+      }
+      
+      if (supportedEmotions.length === 0) {
+        // If we don't have supported emotions yet, extract them from existing data
+        const uniqueEmotions = [...new Set(emotionsData.map(item => item.emotion))];
+        if (uniqueEmotions.length > 0) {
+          updateSupportedEmotions(uniqueEmotions);
+        }
+      }
+      
+      // Update chart data
+      chart.data.labels = emotionsData.map(e => e.time);
+      
+      // Convert emotions to numeric values for the chart
+      const emotionValues = emotionsData.map(e => {
+        const index = supportedEmotions.indexOf(e.emotion);
+        return index >= 0 ? index : 0;
+      });
+      
+      chart.data.datasets[0].data = emotionValues;
+      
+      // Set point colors based on emotion
+      chart.data.datasets[0].pointBackgroundColor = emotionsData.map(e => 
+        emotionColors[e.emotion] || '#9ca3af'
+      );
+      
+      // Count occurrences of each emotion for statistics
+      const emotionCounts = {};
+      supportedEmotions.forEach(e => emotionCounts[e] = 0);
+      
+      emotionsData.forEach(data => {
+        if (emotionCounts[data.emotion] !== undefined) {
+          emotionCounts[data.emotion]++;
+        }
+      });
+      
+      // Determine dominant emotion for background color tint
+      let dominantEmotion = 'neutral';
+      let maxCount = 0;
+      let totalEmotions = 0;
+      
+      for (const [emotion, count] of Object.entries(emotionCounts)) {
+        totalEmotions += count;
+        if (count > maxCount) {
+          maxCount = count;
+          dominantEmotion = emotion;
+        }
+      }
+      
+      // Update chart background based on dominant emotion
+      const bgColor = emotionColors[dominantEmotion] || '#9ca3af';
+      chart.data.datasets[0].backgroundColor = `rgba(${hexToRgb(bgColor)}, 0.2)`;
+      chart.data.datasets[0].borderColor = bgColor;
+      
+      // Update emotion stats bars
+      supportedEmotions.forEach(emotion => {
+        const count = emotionCounts[emotion] || 0;
+        const percentage = totalEmotions > 0 ? (count / totalEmotions) * 100 : 0;
+        
+        const statItem = document.querySelector(`.emotion-stat-item[data-emotion="${emotion}"]`);
+        if (statItem) {
+          const bar = statItem.querySelector('.emotion-bar');
+          const countEl = statItem.querySelector('.emotion-count');
+          
+          bar.style.width = `${percentage}%`;
+          countEl.textContent = count;
+        }
+      });
+      
+      // Apply chart update with animation
+      chart.update({
+        duration: 600,
+        easing: 'easeOutQuart'
+      });
+    }
+    
+    // Helper to convert hex color to RGB for transparency
+    function hexToRgb(hex) {
+      // Remove # if present
+      hex = hex.replace('#', '');
+      
+      // Parse the hex values
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      return `${r}, ${g}, ${b}`;
+    }
+    
+    // Helper to compare arrays
+    function areArraysEqual(arr1, arr2) {
+      if (arr1.length !== arr2.length) return false;
+      for (let i = 0; i < arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) return false;
+      }
+      return true;
+    }
+    
+    // Initial setup
+    if (!chartVisible) {
+      chartContainer.style.display = 'none';
+      toggleChartBtn.textContent = 'Expand';
+    }
+    
+    if (debugMode) {
+      debugPanel.style.display = 'block';
+    }
+    
+    // Initialize the page
+    renderMessages();
+    updateEmotionChart();
+    checkHealth();
+    setInterval(checkHealth, 30000);
+    
+
+// Recommendations sidebar functionality
+const recommendationsContainer = document.getElementById('recommendationsContainer');
+const recommendationsContent = document.getElementById('recommendationsContent');
+const closeRecommendationsBtn = document.getElementById('closeRecommendationsBtn');
+const mobileRecommendationsToggle = document.getElementById('mobileRecommendationsToggle');
+
+// Check if we're on mobile/tablet
+const isMobileView = () => window.innerWidth <= 1024;
+
+// Toggle recommendations visibility on mobile
+function toggleRecommendations() {
+  recommendationsContainer.classList.toggle('visible');
+}
+
+// Event listeners for recommendation sidebar
+mobileRecommendationsToggle.addEventListener('click', toggleRecommendations);
+closeRecommendationsBtn.addEventListener('click', toggleRecommendations);
+
+// Function to render recommendations
+function renderRecommendations(recommendations) {
+  if (!recommendations || recommendations.length === 0) {
+    recommendationsContent.innerHTML = `
+      <div class="no-recommendations">
+        No recommendations available
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  recommendations.forEach(rec => {
+    html += `
+      <div class="recommendation-item">
+        <div class="recommendation-header">
+          <div class="recommendation-emoji">${rec.emoji}</div>
+          <a href="${rec.url}" target="_blank" class="recommendation-title">
+            ${rec.title}
+          </a>
+        </div>
+        <div class="recommendation-meta">
+          ${rec.platform}
+        </div>
+        <div class="recommendation-snippet">
+          ${rec.snippet}
+        </div>
+      </div>
+    `;
+  });
+  
+  recommendationsContent.innerHTML = html;
+  
+  // Show the recommendations panel on mobile when new recommendations arrive
+  if (isMobileView() && !recommendationsContainer.classList.contains('visible')) {
+    // Highlight the button by briefly animating it
+    mobileRecommendationsToggle.style.transform = 'scale(1.2)';
+    setTimeout(() => {
+      mobileRecommendationsToggle.style.transform = 'scale(1)';
+    }, 300);
+  }
+}
+
+// Function to show recommendation loading state
+function showRecommendationsLoading() {
+  recommendationsContent.innerHTML = `
+    <div class="loading-container">
+      <div class="recommendation-loading">
+        <div class="recommendation-spinner"></div>
+        <div>Finding recommendations...</div>
+      </div>
+    </div>
+  `;
+}
+
+// Initialize recommendations
+window.addEventListener('resize', () => {
+  if (!isMobileView()) {
+    recommendationsContainer.classList.remove('visible');
+  }
+});
+
+// Modify the sendMessage function to update the recommendations sidebar
+// Important: This PRESERVES your existing function but adds the recommendation sidebar functionality
+const originalSendMessage = sendMessage;
+sendMessage = async function() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Show loading state in the recommendations panel
+  showRecommendationsLoading();
+  
+  // Call the original sendMessage function
+  await originalSendMessage();
+  
+  // Don't add the fetch code here - we'll modify the recommendation fetching instead
+};
+  </script>
+  
+</body>
+</html>
