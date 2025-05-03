@@ -1,245 +1,136 @@
-Absolutely — here is your final **copy-paste-ready `README.md`** with all details fully included:
-
----
-
 ```markdown
-# 🧠 Offline AI Query Assistant with Emotion Detection
+# Emotion-Aware Content Recommendation System
 
-This is an **offline AI assistant** that supports semantic query answering and emotion-aware responses. It combines a **local LLM** (like Mistral via Ollama) with an **emotion classification model** to enhance responses based on user sentiment.
+A multi-service application that analyzes user emotions from text, provides chat responses, and recommends supportive content across various platforms.
 
----
+## Features
 
-## 🌟 Features
+- **Real-time Emotion Detection**: Uses Hugging Face's `roberta-base-go_emotions` model
+- **AI Chat Interface**: Hybrid model serving with OpenRouter and Ollama fallback
+- **Multi-platform Recommendations**: Generates search queries for 8+ content types across 30+ platforms
+- **Interactive Dashboard**: Visualizes emotion trends and content recommendations
+- **Hybrid Architecture**: Combines cloud APIs with local model serving
 
-- ✨ Local LLM support (Mistral via Ollama)
-- 🔍 Semantic memory via ChromaDB (offline vector store)
-- 💬 Emotion detection using a fine-tuned DistilRoBERTa model
-- 🌐 Web interface using FastAPI and HTML
-- 🧠 Contextual and intelligent query processing
-- ✅ Entirely offline — no cloud required
+## System Architecture
 
----
-
-## 📦 Requirements & Disk Usage
-
-| Component                         | Space Required   |
-|----------------------------------|------------------|
-| Python 3.8+                      | ~100 MB          |
-| Ollama + Mistral Model           | ~3.8 GB          |
-| Emotion Model (HuggingFace)      | ~450 MB          |
-| Python Libraries (via pip)       | ~500 MB          |
-| Vector Storage (ChromaDB local)  | ~200 MB (avg.)   |
-| **Total Estimate**               | **~5.0 – 6.0 GB** |
-
----
-
-## 📁 Folder & File Structure
-
+```mermaid
+graph TD
+    A[Frontend] --> B(Emotion API)
+    A --> C(Chat API)
+    A --> D(Recommendation API)
+    B --> E[Hugging Face Model]
+    C --> F[OpenRouter/Ollama]
+    D --> G[OpenRouter AI]
+    D --> H[Platform URL Builder]
 ```
 
-project-root/
-├── app02.py             # FastAPI app entry point
-├── query\_agent.py       # Handles query, memory, LLM, emotion
-├── recommender.py       # Suggests follow-up prompts
-├── ollama.py            # Interfaces with Ollama API (LLM)
-├── main.py              # Initializes emotion model
-├── page.html            # Frontend interface
-├── .env                 # Configs for models and settings
-├── README.md            # This file
+## Components
 
-```
+1. **Emotion Detection Service** (`app02.py`)
+   - Flask API on port 5002
+   - Detects primary emotion and secondary emotions
+   - Web interface for text input/analysis
 
----
+2. **Chat Service** (`ollama.py`)
+   - Flask API on port 5003
+   - Hybrid chat completion with OpenRouter + Ollama
+   - Response caching and model fallback
 
-## 🔐 .env File Setup
+3. **Recommendation Service** (`recommender.py`)
+   - Flask API on port 5004
+   - Generates platform-specific search queries
+   - Content type mapping and URL building
 
-Create a `.env` file in the root with the following contents:
+4. **Query Agent** (`query_agent.py`)
+   - OpenRouter integration for query generation
+   - Emotion-to-content type mapping
+   - Query cleaning and validation
 
-```
+5. **Frontend Interface** (`page.html`)
+   - Real-time chat interface
+   - Emotion visualization dashboard
+   - Recommendation sidebar with direct links
 
-OLLAMA\_MODEL=mistral
-EMOTION\_MODEL=j-hartmann/emotion-english-distilroberta-base
+## Installation
 
-````
-
----
-
-## 🛠️ Step-by-Step Setup Instructions
-
-### 1️⃣ Install Python 3.8+
-
-- Download from [python.org](https://www.python.org/downloads/)
-- Make sure `python` and `pip` work from terminal:
+### Prerequisites
+- Python 3.9+
+- Node.js (for frontend dependencies)
+- Ollama (optional for local models)
 
 ```bash
-python --version
-pip --version
-````
+# Clone repository
+git clone https://github.com/yourusername/emotion-recommender.git
+cd emotion-recommender
 
----
-
-### 2️⃣ Install Ollama
-
-* Download from: [https://ollama.com/download](https://ollama.com/download)
-* Install and run:
-
-```bash
-ollama run mistral
+# Install Python dependencies
+pip install flask flask-cors requests python-dotenv transformers torch
 ```
 
-> This will download \~3.8 GB model (keep terminal running)
+## Configuration
 
----
-
-### 3️⃣ Install Project Dependencies
-
-If a `requirements.txt` file is not provided, run:
-
-```bash
-pip install fastapi uvicorn langchain chromadb openai tiktoken beautifulsoup4 transformers torch python-dotenv
+1. Create `.env` file:
+```ini
+OPENROUTER_API_KEY=your_openrouter_api_key
+FLASK_DEBUG=True
 ```
 
----
+2. Configure services:
+| Service          | Port | Environment Variables         |
+|------------------|------|--------------------------------|
+| Emotion Detection| 5002 | -                              |
+| Chat Service     | 5003 | OPENROUTER_PRIMARY_MODEL       |
+| Recommendation   | 5004 | -                              |
 
-### 4️⃣ Download Emotion Model (Optional Manual Step)
-
-The emotion model is automatically downloaded on first use, but you can preload it:
-
-```python
-from transformers import pipeline
-pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base")
-```
-
-This downloads \~450 MB into `~/.cache/huggingface`.
-
----
-
-### 5️⃣ Run the App
-
-Start Ollama in one terminal:
+## Running the System
 
 ```bash
-ollama run mistral
-```
-
-Then in another terminal, run the backend:
-
-```bash
+# Start Emotion Detection Service
 python app02.py
+
+# Start Chat Service
+python ollama.py
+
+# Start Recommendation Service
+python recommender.py
+
+# Open frontend in browser
+open page.html
 ```
 
-Server runs at: `http://localhost:8000`
+## API Endpoints
 
----
+### Emotion Detection
+- `POST /detect-emotion` - Analyze text emotions
+- `GET /health` - Service status check
 
-### 6️⃣ Open Web Interface
+### Chat Service
+- `POST /chat` - Get AI chat response
+- `GET /models` - List available models
 
-Go to:
+### Recommendation Service
+- `POST /recommend` - Get content recommendations
+- `GET /test` - Service status check
 
-```
-http://localhost:8000
-```
+## Frontend Usage
 
-Type your query and press **Send**.
+1. Open `page.html` in browser
+2. Type messages in chat interface
+3. View real-time:
+   - Emotion analysis charts
+   - AI responses
+   - Content recommendations
+   - System status indicators
 
----
+## Key Dependencies
 
-## 💡 How It Works
+- Flask (Web framework)
+- Transformers (NLP models)
+- OpenRouter API (AI services)
+- Chart.js (Data visualization)
+- Ollama (Local LLM serving)
 
-1. **Frontend**: HTML interface served via FastAPI.
-2. **Backend**:
+## License
 
-   * `app02.py`: serves frontend + handles API requests.
-   * `query_agent.py`: processes user query, retrieves related context from ChromaDB, detects emotion using `main.py`, and gets response from LLM.
-   * `ollama.py`: connects to the locally running Mistral model using Ollama.
-   * `recommender.py`: provides follow-up question suggestions.
-
----
-
-## 🧠 Emotion Detection
-
-The model `j-hartmann/emotion-english-distilroberta-base` is used to classify emotions such as:
-
-* Joy
-* Sadness
-* Anger
-* Love
-* Surprise
-* Fear
-
-This detected emotion is used to shape the assistant’s responses more empathetically.
-
----
-
-## 🧪 Example
-
-**User Query:**
-
-```
-I'm feeling very low lately. What should I do?
-```
-
-**Detected Emotion:** `sadness`
-
-**AI Response:** Offers comforting suggestions and possible coping methods based on the emotion tag.
-
----
-
-## 🛠 Developer Commands
-
-| Action             | Command                           |
-| ------------------ | --------------------------------- |
-| Run app            | `python app02.py`                 |
-| Start Ollama model | `ollama run mistral`              |
-| Install all deps   | `pip install -r requirements.txt` |
-| Open app           | `http://localhost:8000`           |
-
----
-
-## 📌 Customization Tips
-
-* To change the LLM: Edit `.env` or `ollama.py`
-* To change the emotion model: Modify `main.py`
-* To enhance frontend: Customize `page.html`
-* Add voice: Integrate `SpeechRecognition` and `pyttsx3` (offline)
-
----
-
-## ✅ To-Do Suggestions
-
-* [ ] Add chat memory for multi-turn conversation
-* [ ] Improve frontend layout and visual feedback
-* [ ] Add Docker support
-* [ ] Save emotion analytics for dashboarding
-
----
-
-## 🪪 License
-
-MIT License. Free for personal, educational, or research use.
-
----
-
-## 🙋 Author
-
-Your Name
-Your GitHub | Your Email (if applicable)
-
----
-
-## 🧾 Credits
-
-* [Ollama](https://ollama.com/)
-* [LangChain](https://python.langchain.com/)
-* [ChromaDB](https://www.trychroma.com/)
-* [Transformers by Hugging Face](https://huggingface.co)
-* [j-hartmann/emotion-english-distilroberta-base](https://huggingface.co/j-hartmann/emotion-english-distilroberta-base)
-
-```
-
----
-
-✅ You can now **copy the entire block above into a file named `README.md`** inside your project folder.
-
-Would you like a ready-to-copy `requirements.txt` file as well?
+MIT License - See [LICENSE](LICENSE) for details
 ```
